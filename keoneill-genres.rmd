@@ -1,0 +1,114 @@
+---
+title: "Genres of Music"
+subtitle: "b565 Bonus Homework"
+author: "Kevin O'Neill"
+date: "12/18/2015"
+output: pdf_document
+---
+
+Question 1:
+The relative frequencies of all 6 genres are as follows:
+First we find the total number and then find the relative frequency by dividing the frequency of each
+Genre by the total.
+```{r}
+g <- read.csv("genresRaw.csv", header=TRUE)
+
+g.nrows <- nrow(g)
+g.splits <- split(g, g$GENRE)
+g.names <- names(g.splits)
+freqs <- c(nrow(g.splits[['Blues']]),
+           nrow(g.splits[['Classical']]),
+           nrow(g.splits[['Jazz']]),
+           nrow(g.splits[['Metal']]),
+           nrow(g.splits[['Pop']]),
+           nrow(g.splits[['Rock']]))
+
+dim(g)
+
+g.freq <- data.frame(Genre = g.names, Freq = freqs, Rel_Freq = freqs/g.nrows)
+g.freq
+
+# A quicker way to do this 
+round(prop.table(table(g$GENRE)) * 100, digits = 2)
+```
+
+
+****
+Question 2: We can look at the pairwise correlations of all the features by doing the following:
+```{r}
+require(Hmisc)
+g.sub <- g[c(-1:-4)] # reduce data.frame to features only
+g.mat <- as.matrix(g.sub) # convert to matrix
+g.cor <- rcorr(g.mat, type="pearson")
+# write.csv(g.cor$r, "genre-correlation.csv")
+g.cor.mat <- g.cor$r 
+# delete extra row and column that produced the NAs
+g.cor.mat <- g.cor.mat[,-192]
+g.cor.mat <- g.cor.mat[-192,]
+dim(g.cor.mat)
+g.cor.mat[1:5, 1:5]
+```
+
+
+****
+Question 3:
+We can find the number of performers by checking for the unique ARTIST_ID's
+```{r}
+length( unique(g$ARTIST_ID))
+```
+There are 60 performers present in the data.
+
+
+****
+Question 4: 
+
+```{r}
+artists <- unique(g$ARTIST_ID)
+num_pieces <- c()
+for (artist in artists) {
+    artist.df <- g[g$ARTIST_ID == artist, ]
+    num_pieces <- append(num_pieces, length(unique(artist.df$PIECE_ID)))
+}
+num_pieces_per_artist <- data.frame(ARTIST_ID = artists, NUM_PIECES = num_pieces)
+# These are the counts for the number of pieces each performer contributed
+num_pieces_per_artist
+```
+
+
+****
+Question 5:
+
+Every piece is subdivided into 21 segments
+
+****
+Question 6:
+
+```{r}
+require(class)
+require(gmodels)
+# using knn algorithm to classify genres
+g.train <- read.csv("genresTrain.csv", header=TRUE)
+g.test <- read.csv("genresTest.csv", header=TRUE)
+g.train[1:5, 1:10]
+# function to normalize the columns
+normalize <- function(x) {return ((x - min(x)) / (max(x) - min(x)))}
+g.n <- as.data.frame(lapply(g.train[1:191], normalize)) # normalizing numeric columns
+g.n.train <- g.n[1:6247,]
+g.n.test <- g.n[6248:12495,]
+#g.n.test <- as.data.frame(lapply(g.test[1:191], normalize))
+#g.n.labels <- g.train$GENRE # vector of GENRE labels
+g.n.train.labels <- g.train$GENRE[1:6247]
+g.n.test.labels <- g.train$GENRE[6248:12495]
+
+k <- round(sqrt(nrow(g.n.train)))
+genre_test_pred <- knn(g.n.train, g.n.test, g.n.train.labels, k)
+CrossTable(x = g.n.test.labels, y = genre_test_pred, prop.chisq=FALSE)
+```
+
+
+****
+Question 7:
+```{r}
+
+
+```
